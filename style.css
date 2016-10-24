@@ -62,9 +62,15 @@ div#information {
 
 a {
     position: absolute;
-    
+    display: inline-block;
+
+    color: black;
     text-decoration: none;
-    background: #222;
+    background: #333;
+}
+
+a:last-of-type {
+    margin-top: 36px;
 }
 
 a:active {

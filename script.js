@@ -1,11 +1,29 @@
 var textarea,
     svg,
     message,
+    save,
     download,
     variables = {
         names: ['width', 'height', 'centerX', 'centerY'],
     },
-    defaults = { canvasWidth: 256, canvasHeight: 256, gridSize: 16, strokeWidth: 8, strokeLineCap: 'square', radius: 32 };
+    defaults = {
+        canvasWidth: 256,
+        canvasHeight: 256,
+        gridSize: 16,
+        strokeWidth: 8,
+        strokeLineCap: 'square',
+        fill: 'none',
+        radius: 32
+    },
+    settings = {
+        canvasWidth: 256,
+        canvasHeight: 256,
+        gridSize: 16,
+        strokeWidth: 8,
+        strokeLineCap: 'square',
+        fill: 'none',
+        radius: 32
+    };
 var shape = {
     point: function (x, y) {
         x = value(x);
@@ -17,13 +35,13 @@ var shape = {
         point2 = value(point2);
 
         this.element = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        this.element.setAttributeNS(null, 'x1', point1[0] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'y1', point1[1] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'x2', point2[0] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'y2', point2[1] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'stroke-width', defaults.strokeWidth);
+        this.element.setAttributeNS(null, 'x1', point1[0] * settings.gridSize);
+        this.element.setAttributeNS(null, 'y1', point1[1] * settings.gridSize);
+        this.element.setAttributeNS(null, 'x2', point2[0] * settings.gridSize);
+        this.element.setAttributeNS(null, 'y2', point2[1] * settings.gridSize);
+        this.element.setAttributeNS(null, 'stroke-width', settings.strokeWidth);
         this.element.setAttributeNS(null, 'stroke', 'black');
-        this.element.setAttributeNS(null, 'stroke-linecap', defaults.strokeLineCap);
+        this.element.setAttributeNS(null, 'stroke-linecap', settings.strokeLineCap);
         svg.appendChild(this.element);
     },
     circle: function (point, radius, fill, stroke) {
@@ -31,26 +49,61 @@ var shape = {
         radius = value(radius);
 
         this.element = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        this.element.setAttributeNS(null, 'cx', point[0] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'cy', point[1] * defaults.gridSize);
-        this.element.setAttributeNS(null, 'r', radius * defaults.gridSize);
-        this.element.setAttributeNS(null, 'fill', 'none');
-        this.element.setAttributeNS(null, 'stroke-width', defaults.strokeWidth);
+        this.element.setAttributeNS(null, 'cx', point[0] * settings.gridSize);
+        this.element.setAttributeNS(null, 'cy', point[1] * settings.gridSize);
+        this.element.setAttributeNS(null, 'r', radius * settings.gridSize);
+        this.element.setAttributeNS(null, 'fill', settings.fill);
+        this.element.setAttributeNS(null, 'stroke-width', settings.strokeWidth);
         this.element.setAttributeNS(null, 'stroke', 'black');
+        svg.appendChild(this.element);
+    },
+    arc: function (point1, point2, curve) {
+        point1 = value(point1);
+        point2 = value(point2);
+
+        distance = Math.sqrt(
+            Math.pow((point1[0] - point2[0]), 2) +
+            Math.pow((point1[1] - point2[1]), 2)) * settings.gridSize;
+
+        curve = (isNaN(curve)) ? distance / 2 : value(curve) * settings.gridSize;
+        if(curve > distance/2) {
+            error('Arc curve is too high.');
+        }
+        radius = (((distance / 2) * (distance / 2)) + (curve * curve)) / (2 * curve);
+        console.log('distance = ' + distance + ' radius = ' + radius);
+
+        this.element = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        var string = 'M ' + point1[0] * settings.gridSize + ' ' + point1[1] * settings.gridSize + ' A ' + radius + ' ' + radius + ' 0 0 1 ' + point2[0] * settings.gridSize + ' ' + point2[1] * settings.gridSize;
+
+        console.log(string)
+        this.element.setAttributeNS(null, 'd', string);
+        this.element.setAttributeNS(null, 'fill', settings.fill);
+        this.element.setAttributeNS(null, 'stroke-width', settings.strokeWidth);
+        this.element.setAttributeNS(null, 'stroke', 'black');
+        this.element.setAttributeNS(null, 'stroke-linecap', settings.strokeLineCap);
         svg.appendChild(this.element);
     }
 }
 
 window.onload = function () {
-
     textarea = document.getElementsByTagName('textarea')[0];
     textarea.onkeyup = textChange;
-    textarea.value = localStorage.getItem('text');
+    textarea.value = (localStorage.getItem('text') === null) ? '' : localStorage.getItem('text');
     svg = document.getElementsByTagName('svg')[0];
     message = document.getElementById('message');
     download = document.getElementById('download');
-    
+    download.onclick = function () {
+        this.href = "data:text/xml;charset=utf-8," + document.getElementById('svg').innerHTML;
+        this.download = 'exact-image.svg';
+    };
+    save = document.getElementById('save');
+    save.onclick = function () {
+        this.href = "data:text/plain," + textarea.value.split('\n').join('%0D%0A');
+        this.download = 'exact-draw.txt';
+    }
+
     draw();
+    //shape.arc([128, 16], [128, 240]);
 }
 
 function textChange(event) {
@@ -96,17 +149,18 @@ function draw() {
     while (svg.firstChild) {
         svg.removeChild(svg.firstChild);
     }
-    svg.style.width = defaults.canvasWidth;
-    svg.style.height = defaults.canvasHeight;
+    svg.style.width = settings.canvasWidth;
+    svg.style.height = settings.canvasHeight;
     var svgWidth = svg.getBoundingClientRect().width;
     var svgHeight = svg.getBoundingClientRect().width;
     variables = {
         names: ['width', 'height', 'centerX', 'centerY'],
-        width: svgWidth / defaults.gridSize,
-        height: svgHeight / defaults.gridSize,
-        centerX: (svgWidth / defaults.gridSize) / 2,
-        centerY: (svgHeight / defaults.gridSize) / 2
+        width: svgWidth / settings.gridSize,
+        height: svgHeight / settings.gridSize,
+        centerX: (svgWidth / settings.gridSize) / 2,
+        centerY: (svgHeight / settings.gridSize) / 2
     };
+    settings.fill = defaults.fill;
     var parent = message.parentNode;
     message.innerHTML = '';
     parent.removeChild(message);
@@ -157,7 +211,7 @@ function draw() {
             case 'line':
                 switch (values.length) {
                     case 3:
-                        //LINE Point Point
+                        //LINE Point1 Point2
                         if (Array.isArray(value(values[1])) && Array.isArray(value(values[2]))) {
                             shape.line(values[1], values[2]);
                         } else {
@@ -187,11 +241,39 @@ function draw() {
                         break;
                 }
                 break;
+            case 'arc':
+                switch (values.length) {
+                    case 4:
+                        //ARC Point1 Point2
+                        if (Array.isArray(value(values[1]))) {
+                            shape.arc(values[1], values[2], values[3]);
+                        } else {
+                            error(element);
+                        }
+                        break;
+                    case 5:
+                        //ARC X1 Y1 X2 Y2
+                        shape.arc([values[1], values[2]], [values[3], values[4]]);
+                        break;
+                    case 6:
+                        //ARC X1 Y1 X2 Y2
+                        shape.arc([values[1], values[2]], [values[3], values[4]], values[5]);
+                        break;
+                }
+                break;
             case 'stroke':
                 switch (values.length) {
                     case 2:
-                        //Stroke Width
-                        defaults.strokeWidth = value(values[1]);
+                        //STROKE Width
+                        settings.strokeWidth = value(values[1]);
+                        break;
+                }
+                break;
+            case 'fill':
+                switch (values.length) {
+                    case 2:
+                        //FILL Color
+                        settings.fill = values[1];
                         break;
                 }
                 break;
@@ -201,7 +283,4 @@ function draw() {
         }
 
     }, this);
-
-    download.href = "data:text/xml;charset=utf-8," + document.getElementById('svg').innerHTML;
-    download.download = 'image.svg';
 }

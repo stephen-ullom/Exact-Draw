@@ -1,0 +1,9 @@
+STROKE 16
+VAR x 3
+POINT A x centerY+1
+point B centerX-2 height-x-1
+Point C width-x x*2
+LINE A B
+LINE B C
+STROKE 4
+CIRCLE centerX centerY centerX-1

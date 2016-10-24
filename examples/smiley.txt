@@ -1,0 +1,11 @@
+STROKE 12
+FILL yellow
+VAR x 3
+POINT A x centerY+1
+point B centerX-2 height-x-1
+Point C width-x x*2
+CIRCLE centerX centerY centerX-1
+ARC width-x height-2*x x height-2*x 5.5
+FILL white
+CIRCLE 5 6 1.5
+CIRCLE 11 6 1.5
